@@ -7,11 +7,7 @@ from django_extensions.db.models import(
     TitleSlugDescriptionModel
 )
 
-class Item(
-    TimeStampedModel,
-    ActivatorModel,
-    TitleSlugDescriptionModel,
-    Model):
+class Item(TimeStampedModel,ActivatorModel,TitleSlugDescriptionModel,Model):
     
     class Meta:
         verbose_name = 'Item'
@@ -49,11 +45,16 @@ class Item(
             return order
         else:
             return None
-        
-class Order(
-    TimeStampedModel,
-    ActivatorModel,
-    Model):
+
+class Cart(TimeStampedModel, ActivatorModel, Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  # Cart owner
+
+class CartItem(TimeStampedModel, ActivatorModel, Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    quantity = models.IntegerField(default=1)
+
+class Order(TimeStampedModel,ActivatorModel,Model):
     
     
     class Meta:
@@ -62,6 +63,7 @@ class Order(
         ordering = ["id"]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    cart = models.ForeignKey(Cart,on_delete=models.CASCADE, null=True, blank=True)
     item = models.ForeignKey(Item, null=True,blank=True, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=0)
 
