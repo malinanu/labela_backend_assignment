@@ -12,16 +12,22 @@ from rest_framework.mixins import ListModelMixin,UpdateModelMixin,RetrieveModelM
 
 
 
-class ItemViewSet(ListModelMixin,RetrieveModelMixin,viewsets.GenericViewSet
-        ):
+class ItemViewSet(ListModelMixin,
+        RetrieveModelMixin, 
+        viewsets.GenericViewSet):
 
     """
-    getting the items 
+    getting all the items and filtering active items only
 
     """
     permission_classes = (IsAuthenticated,)
     quaryset =  Item.objects.all()
     serializer_class = ItemSerializers
+
+    def get_queryset(self):
+        return Item.objects.filter(status=1)
+
+
 
 class CartViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
@@ -36,6 +42,9 @@ class CartViewSet(viewsets.ViewSet):
         try:
             item = Item.objects.get(pk=data['item_id'])
             cart = self.get_cart()
+            cart_item, created = cart.items.get_or_create(item=item)
+            cart_item.quantity += 1 
+            cart_item.save()
            
             serializer = CartSerializer(cart)
             return Response(serializer.data)
@@ -65,8 +74,8 @@ class OrderViewSet(ListModelMixin,
             serializer = OrderSerializers(data=data)
             if serializer.is_valid(raise_exception=True):
                 item = Item.objects.get(pk=data['item'])
-                Order =Item.place_order(requset.user,data["quantity"])
-                return Response(OrderSerializers(Order).data)
+                order =item.place_order(requset.user,data["quantity"])
+                return Response(OrderSerializers(order).data)
             else:
                 return Response(serializer.errors,status = status.HTTP_400_BAD_REQUEST)
         except JSONDecodeError:

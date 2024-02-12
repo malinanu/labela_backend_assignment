@@ -20,21 +20,48 @@ class Item(TimeStampedModel,ActivatorModel,TitleSlugDescriptionModel,Model):
 
     stock = models.IntegerField(default=1)
     price = models.IntegerField(default=0)
+    
 
     def amount(self):
         amount = float(self.price)
         return amount
     
+    """
+    managing the stock
+    """
+
     def manage_stock(self,qty):
         new_stock = self.stock - int(qty)
         self.stock = new_stock
         self.save()
 
+    """
+    checking the stock avalibality
+    """
+
     def check_stock(self,qty):
         if int(qty) > self.stock:
             return False
         return True
+    
 
+    """
+    before adding a items to the cart this funtion check avalibilty of the item stock 
+    """
+    def add_to_cart(self,user,qty):
+        if self.check_stock(qty):
+            cartItem = CartItem.objects.create(
+                item = self,
+                quantity =qty,
+                user =user)
+            self.manage_stock(qty)
+            return cartItem
+        else:
+            return None
+
+    """
+    before checking-out of the cart check the avalability of the stock   
+    """
     def place_order(self,user,qty):
         if self.check_stock(qty):
             order = Order.objects.create(
@@ -45,6 +72,8 @@ class Item(TimeStampedModel,ActivatorModel,TitleSlugDescriptionModel,Model):
             return order
         else:
             return None
+    
+  
 
 class Cart(TimeStampedModel, ActivatorModel, Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  # Cart owner
