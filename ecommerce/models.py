@@ -73,18 +73,30 @@ class Item(TimeStampedModel,ActivatorModel,TitleSlugDescriptionModel,Model):
         else:
             return None
     
+"""
+add to cart model 
+
+cart is keeping 
+"""
   
 
 class Cart(TimeStampedModel, ActivatorModel, Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  # Cart owner
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  
 
 class CartItem(TimeStampedModel, ActivatorModel, Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
 
+
+
+
+
+""""
+Item ordering model
+"""
+
 class Order(TimeStampedModel,ActivatorModel,Model):
-    
     
     class Meta:
         verbose_name = 'Order'

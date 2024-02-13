@@ -1,40 +1,42 @@
+# Use an official Python runtime as a parent image
 FROM python:3.11
+
+# Metadata indicating an image maintainer
 LABEL author='Label A'
 
+# Set the working directory in the container
 WORKDIR /app
 
-# Environment - Install Postgres dependencies
-RUN apt-get update
-RUN apt-get install -y bash vim nano postgresql postgresql-contrib 
-RUN pip install --upgrade pip
+# Install dependencies required for psycopg2-binary
+# Combine apt-get update with apt-get install and clean up in one layer to reduce image size
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Major pinned python dependencies
-RUN pip install --no-cache-dir flake8==3.8.4 uWSGI psycopg2-binary # Added psycopg2-binary
-RUN apt-get update && apt-get install -y dos2unix
-
-# Regular Python dependencies
 COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt psycopg2-binary flake8==3.8.4 uWSGI
 
-# Copy our codebase into the container
-COPY . .
+# Copy the current directory contents into the container at /app
+COPY . /app
 
-RUN dos2unix manage.py 
+# Set environment variables
+ENV WORKERS=2 \
+    PORT=80 \
+    PYTHONUNBUFFERED=1 \
+    POSTGRES_USER=myuser \
+    POSTGRES_PASSWORD=mypassword \
+    POSTGRES_DB=mydb
 
-# Ops Parameters
-ENV WORKERS=2
-ENV PORT=80
-ENV PYTHONUNBUFFERED=1
+# Expose the port the app runs on
+EXPOSE ${PORT}
 
+# Define volume for PostgreSQL data
+VOLUME /var/lib/postgresql/data
 
-ENV POSTGRES_USER=myuser 
-ENV POSTGRES_PASSWORD=mypassword
-ENV POSTGRES_DB=mydb
+# Use the official PostgreSQL image for the database service
+# Note: This should be defined in a docker-compose.yml file, not here
 
-# Initialize an empty Postgres data volume 
-VOLUME /var/lib/postgresql/data 
-
-EXPOSE ${PORT} 5432 
-
-# Start Postgres and run Django app at container startup  
-CMD ["sh", "-c", "service postgresql start && uwsgi --http :${PORT} --processes ${WORKERS} --static-map /static=/static --module autocompany.wsgi:application"] 
+# Start command to run the app
+# Note: Starting PostgreSQL should be handled by its own container
+CMD ["sh", "-c", "uwsgi --http :${PORT} --processes ${WORKERS} --static-map /static=/static --module autocompany.wsgi:application"]

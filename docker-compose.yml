@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: labdb
+      POSTGRES_USER: dbuser
+      POSTGRES_PASSWORD: 123456
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:80"
+    environment:
+      - POSTGRES_DB=labdb
+      - POSTGRES_USER=dbuser
+      - POSTGRES_PASSWORD=123456
+      - POSTGRES_SERVICE=db
+      - POSTGRES_PORT=5432
+      - DEBUG=1
+      - SECRET_KEY='django-insecure-7+om-9__!v%1ud!6-wwkf0hs0x7v1myz9jn#e9d8n@v#1^qk3p'
+      - ALLOWED_HOSTS=* localhost 127.0.0.1 [::1]
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
